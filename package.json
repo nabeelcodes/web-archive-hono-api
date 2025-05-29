@@ -3,12 +3,18 @@
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy --minify",
+		"db:generate": "drizzle-kit generate:sqlite --config drizzle.config.json",
+		"db:up": "drizzle-kit up:sqlite --config drizzle.config.json",
 		"cf-typegen": "wrangler types --env-interface CloudflareBindings"
 	},
 	"dependencies": {
+		"@libsql/client": "^0.15.7",
+		"drizzle-orm": "^0.44.0",
 		"hono": "^4.7.10"
 	},
 	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20250529.0",
+		"drizzle-kit": "^0.31.1",
 		"wrangler": "^4.4.0"
 	}
 }
