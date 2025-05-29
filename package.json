@@ -3,8 +3,9 @@
 	"scripts": {
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy --minify",
-		"db:generate": "drizzle-kit generate:sqlite --config drizzle.config.json",
-		"db:up": "drizzle-kit up:sqlite --config drizzle.config.json",
+		"db:generate": "drizzle-kit generate",
+		"db:local": "pnpx wrangler d1 execute web-archive-db --local --file=./drizzle/migrations/0000_sad_scream.sql",
+		"db:remote": "pnpx wrangler d1 execute web-archive-db --remote --file=./drizzle/migrations/0000_sad_scream.sql",
 		"cf-typegen": "wrangler types --env-interface CloudflareBindings"
 	},
 	"dependencies": {
@@ -14,7 +15,9 @@
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20250529.0",
+		"dotenv": "^16.5.0",
 		"drizzle-kit": "^0.31.1",
+		"tsx": "^4.19.4",
 		"wrangler": "^4.4.0"
 	}
 }
