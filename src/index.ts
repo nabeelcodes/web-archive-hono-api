@@ -1,5 +1,8 @@
-import { Hono } from 'hono';
 import type { D1Database } from '@cloudflare/workers-types';
+import { drizzle } from 'drizzle-orm/d1';
+import { Hono } from 'hono';
+
+import { posts } from './db/schema/posts';
 
 export type ENV = {
 	DB: D1Database;
@@ -16,7 +19,9 @@ const app = new Hono<{ Bindings: ENV }>();
 // @route: GET /api/posts
 // @access: public
 app.get('/api/posts', async (context) => {
-	return context.text('Hello Hono!');
+	const db = drizzle(context.env.DB);
+	const postsInDB = await db.select().from(posts).limit(context.env.POSTS_PER_PAGE);
+	return context.json(postsInDB);
 });
 
 // @desc: create new post
