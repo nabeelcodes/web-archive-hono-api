@@ -4,8 +4,8 @@
 		"dev": "wrangler dev",
 		"deploy": "wrangler deploy --minify",
 		"db:generate": "drizzle-kit generate",
-		"db:local": "pnpx wrangler d1 execute web-archive-db --local --file=./drizzle/migrations/0000_sad_scream.sql",
-		"db:remote": "pnpx wrangler d1 execute web-archive-db --remote --file=./drizzle/migrations/0000_sad_scream.sql",
+		"db:local": "pnpx wrangler d1 execute web-archive-db --local --file=./src/db/migrations/0000_rich_vertigo.sql",
+		"db:remote": "pnpx wrangler d1 execute web-archive-db --remote --file=./src/db/migrations/0000_rich_vertigo.sql",
 		"studio": "pnpm drizzle-kit studio --port 3000 --verbose",
 		"cf-typegen": "wrangler types --env-interface CloudflareBindings"
 	},
