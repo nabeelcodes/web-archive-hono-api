@@ -1,7 +1,7 @@
 export interface Tag {
 	id: number;
 	name: string;
-	createdAt: number;
+	createdAt: Date;
 }
 
 export interface User {
@@ -9,17 +9,29 @@ export interface User {
 	username: string;
 	email: string;
 	password: string;
-	createdAt: number;
+	createdAt: Date;
 }
 
 export interface Post {
 	id: number;
-	userId: string;
+	creatorId: number;
 	title: string;
 	description: string | null;
 	link: string;
 	image: string;
-	tags: string; // JSON string
-	createdAt: number;
-	updatedAt: number;
+	tags: string;
+	createdAt: Date;
+	updatedAt: Date;
+}
+
+export interface UserSignUp {
+	username: string;
+	email: string;
+	password: string;
+	secret: string;
+}
+
+export interface UserLogin {
+	email: string;
+	password: string;
 }

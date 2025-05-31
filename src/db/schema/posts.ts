@@ -1,11 +1,11 @@
-import { sql } from 'drizzle-orm';
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sql } from 'drizzle-orm';
 
 import { users } from './users';
 
 export const posts = sqliteTable('posts', {
 	id: integer('id').primaryKey({ autoIncrement: true }),
-	userId: text('user_id')
+	creatorId: integer('creator_id')
 		.notNull()
 		.references(() => users.id),
 	title: text('title').notNull(),
@@ -13,10 +13,10 @@ export const posts = sqliteTable('posts', {
 	link: text('link').notNull().unique(),
 	image: text('image').notNull(),
 	tags: text('tags').notNull(), // We'll store tags as a JSON string
-	createdAt: integer('created_at', { mode: 'timestamp' })
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
 		.notNull()
-		.default(sql`(unixepoch())`),
-	updatedAt: integer('updated_at', { mode: 'timestamp' })
+		.default(sql`(unixepoch() * 1000)`),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
 		.notNull()
-		.default(sql`(unixepoch())`)
+		.default(sql`(unixepoch() * 1000)`)
 });
