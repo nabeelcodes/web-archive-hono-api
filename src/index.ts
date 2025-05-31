@@ -2,6 +2,7 @@ import type { D1Database } from '@cloudflare/workers-types';
 import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 
+import { registerUser } from './controllers/usersControllers';
 import { posts } from './db/schema/posts';
 
 export type ENV = {
@@ -14,6 +15,9 @@ export type ENV = {
 };
 
 const app = new Hono<{ Bindings: ENV }>();
+
+// USER ROUTES
+app.post('/api/users/register', registerUser);
 
 // @desc: get all posts
 // @route: GET /api/posts

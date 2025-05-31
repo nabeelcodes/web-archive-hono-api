@@ -1,3 +1,9 @@
+import { BlankInput } from 'hono/types';
+import { Context } from 'hono';
+import { ENV } from '../index';
+
+export type HonoContext = Context<{ Bindings: ENV }, string, BlankInput>;
+
 export interface Tag {
 	id: number;
 	name: string;
