@@ -70,10 +70,12 @@ CORS_WHITELIST=
 ## Project Structure
 
 ```
-api\
- |--src\db\schema   # database schema
- |--utils\          # Utility classes and functions
- |--src\index.ts    # App entry point
+api
+ |--src/index.ts        # App entry point
+ |--src/db/schema       # database schema
+ |--src/middleware/     # custom middlewares
+ |--src/controllers/    # controllers(functions)
+ |--src/utils/          # Utility classes and functions
 ```
 
 ### API Endpoints
@@ -91,11 +93,17 @@ List of available routes:
 **Post routes**:
 
 ```
-`GET    api/posts`     - Fetch all posts
-`GET    api/posts/:id` - Fetch single post
-`POST   api/posts`     - Create new post(private route)
-`PUT    api/posts/:id` - Update a post(private route)
-`DELETE api/posts/:id` - Delete a post(private route)
+`GET    api/posts`        - Fetch all posts
+`GET    api/posts/:id`    - Fetch single post
+`POST   api/posts`        - Create new post(private route)
+`PUT    api/posts/:id`    - Update a post(private route)
+`DELETE api/posts/:id`    - Delete a post(private route)
+```
+
+**Tag routes**:
+
+```
+`GET    api/tags`         - Fetch all tags
 ```
 
 ## License

@@ -1,24 +1,47 @@
 import { BlankInput } from 'hono/types';
 import { Context } from 'hono';
-import { ENV } from '../index';
+import type { D1Database } from '@cloudflare/workers-types';
 
-export type HonoContext = Context<{ Bindings: ENV }, string, BlankInput>;
+export type HonoContext = Context<{ Bindings: ENV; Variables: Variables }, string, BlankInput>;
 
-export interface Tag {
+export type ENV = {
+	DB: D1Database;
+	POSTS_PER_PAGE: number;
+	JWT_SECRET: string;
+	ADMIN_SECRET: string;
+	FRONTEND_URL: string;
+	CORS_WHITELIST: string;
+};
+
+export type Variables = {
+	user: { username: string; email: string; id: string };
+};
+
+export type JWTPayload = {
+	user: {
+		username: string;
+		email: string;
+		id: string;
+	};
+	exp: number;
+	iat: number;
+};
+
+export type Tag = {
 	id: number;
 	name: string;
 	createdAt: Date;
-}
+};
 
-export interface User {
+export type User = {
 	id: number;
 	username: string;
 	email: string;
 	password: string;
 	createdAt: Date;
-}
+};
 
-export interface Post {
+export type Post = {
 	id: number;
 	creatorId: number;
 	title: string;
@@ -28,16 +51,16 @@ export interface Post {
 	tags: string;
 	createdAt: Date;
 	updatedAt: Date;
-}
+};
 
-export interface UserSignUp {
+export type UserSignUp = {
 	username: string;
 	email: string;
 	password: string;
 	secret: string;
-}
+};
 
-export interface UserLogin {
+export type UserLogin = {
 	email: string;
 	password: string;
-}
+};

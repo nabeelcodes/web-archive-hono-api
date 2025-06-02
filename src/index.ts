@@ -1,59 +1,16 @@
-import type { D1Database } from '@cloudflare/workers-types';
-import { drizzle } from 'drizzle-orm/d1';
 import { Hono } from 'hono';
 
-import { registerUser } from './controllers/usersControllers';
-import { posts } from './db/schema/posts';
+import { fetchCurrentUser, loginUser, registerUser } from './controllers/usersControllers';
+import validateToken from './middleware/validateTokenHandler';
+import { ENV, Variables } from './utils/types';
 
-export type ENV = {
-	DB: D1Database;
-	POSTS_PER_PAGE: number;
-	JWT_SECRET: string;
-	ADMIN_SECRET: string;
-	FRONTEND_URL: string;
-	CORS_WHITELIST: string;
-};
-
-const app = new Hono<{ Bindings: ENV }>();
+const app = new Hono<{ Bindings: ENV; Variables: Variables }>();
 
 // USER ROUTES
-app.post('/api/users/register', registerUser);
-
-// @desc: get all posts
-// @route: GET /api/posts
-// @access: public
-app.get('/api/posts', async (context) => {
-	const db = drizzle(context.env.DB);
-	const postsInDB = await db.select().from(posts).limit(context.env.POSTS_PER_PAGE);
-	return context.json(postsInDB);
-});
-
-// @desc: create new post
-// @route: POST /api/posts
-// @access: private
-app.post('/api/posts', async (context) => {
-	return context.text('Hello Hono!');
-});
-
-// @desc: get single post
-// @route: GET /api/posts/:id
-// @access: public
-app.get('/api/posts/:id', async (context) => {
-	return context.text('Hello Hono!');
-});
-
-// @desc: update a post
-// @route: PUT /api/posts/:id
-// @access: private
-app.put('/api/posts/:id', async (context) => {
-	return context.text('Hello Hono!');
-});
-
-// @desc: delete a post
-// @route: DELETE /api/posts/:id
-// @access: private
-app.delete('/api/posts/:id', async (context) => {
-	return context.text('Hello Hono!');
-});
+app
+	.post('/api/users/register', registerUser)
+	.post('/api/users/login', loginUser)
+	.use('/api/users/current', validateToken)
+	.get('/api/users/current', fetchCurrentUser);
 
 export default app;

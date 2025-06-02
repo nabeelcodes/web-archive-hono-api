@@ -1,8 +1,9 @@
 import { drizzle } from 'drizzle-orm/d1';
 import { eq } from 'drizzle-orm';
+import { sign } from 'hono/jwt';
 
 import { users } from '../db/schema/users';
-import { hashPassword } from '../utils/helpers';
+import { hashPassword, verifyPassword } from '../utils/helpers';
 import { HonoContext, UserSignUp } from '../utils/types';
 
 // @desc: register a new user
@@ -72,6 +73,100 @@ export const registerUser = async (context: HonoContext) => {
 					message: error.message
 				}
 			});
+		} else {
+			context.status(500);
+			return context.json({
+				error: {
+					title: 'Internal Server Error',
+					message: 'An unexpected error occurred.'
+				}
+			});
 		}
 	}
+};
+
+// @desc: login an existing user
+// @route: POST /api/users/login
+// @access: public
+export const loginUser = async (context: HonoContext) => {
+	const db = drizzle(context.env.DB);
+
+	try {
+		const { email, password } = await context.req.json<{ email: string; password: string }>();
+
+		// missing fields validation
+		if (!email || !password) {
+			context.status(400);
+			throw new Error(`All fields are mandatory!`);
+		}
+
+		const existingUser = await db.select().from(users).where(eq(users.email, email));
+
+		// checking if user exists
+		if (existingUser.length === 0) {
+			context.status(400);
+			throw new Error(`User does not exist!`);
+		}
+
+		const isPasswordValid = await verifyPassword(password, existingUser[0].password);
+
+		// checking if password is valid
+		if (!isPasswordValid) {
+			context.status(401);
+			throw new Error(`Invalid credentials!`);
+		}
+
+		// generate access token
+		const accessToken = await sign(
+			{
+				user: existingUser[0],
+				exp: Math.floor(Date.now() / 1000) + 60 * 60 // 1 hour expiration
+			},
+			context.env.JWT_SECRET
+		);
+
+		context.status(200);
+		return context.json({
+			userData: {
+				username: existingUser[0].username,
+				email: existingUser[0].email
+			},
+			accessToken
+		});
+	} catch (error) {
+		if (error instanceof Error) {
+			context.status(400);
+			return context.json({
+				error: {
+					title: error.name,
+					message: error.message
+				}
+			});
+		} else {
+			context.status(500);
+			return context.json({
+				error: {
+					title: 'Internal Server Error',
+					message: 'An unexpected error occurred.'
+				}
+			});
+		}
+	}
+};
+
+// @desc: get details on an existing user
+// @route: GET /api/users/current
+// @access: private
+export const fetchCurrentUser = async (context: HonoContext) => {
+	const verifiedUser = context.get('user');
+
+	context.status(200);
+	return context.json({
+		message: 'User authorized!',
+		user: {
+			id: verifiedUser.id,
+			username: verifiedUser.username,
+			email: verifiedUser.email
+		}
+	});
 };
