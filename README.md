@@ -85,25 +85,25 @@ List of available routes:
 **User routes**:
 
 ```
-`POST api/users/register` - Create a user
-`POST api/users/login`    - Login user
-`GET  api/users/current`  - Get current user(private route)
+`POST   api/users/register` - Create a user
+`POST   api/users/login`    - Login user
+`GET    api/users/current`  - Get current user(private route)
 ```
 
 **Post routes**:
 
 ```
-`GET    api/posts`        - Fetch all posts
-`GET    api/posts/:id`    - Fetch single post
-`POST   api/posts`        - Create new post(private route)
-`PUT    api/posts/:id`    - Update a post(private route)
-`DELETE api/posts/:id`    - Delete a post(private route)
+`GET    api/posts`          - Fetch all posts
+`GET    api/posts/:id`      - Fetch single post
+`POST   api/posts`          - Create new post(private route)
+`PUT    api/posts/:id`      - Update a post(private route)
+`DELETE api/posts/:id`      - Delete a post(private route)
 ```
 
 **Tag routes**:
 
 ```
-`GET    api/tags`         - Fetch all tags
+`GET    api/tags`           - Fetch all tags
 ```
 
 ## License
