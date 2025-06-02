@@ -1,4 +1,3 @@
-// Remove the imports since these are available globally in Workers runtime
 export const serializeTags = (tags: string[]) => JSON.stringify(tags);
 
 export const deserializeTags = (tagsString: string): string[] => JSON.parse(tagsString);
