@@ -2,7 +2,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { eq } from "drizzle-orm";
 import { sign } from "hono/jwt";
 
-import { users } from "../db/schema/users";
+import { usersTable } from "../db/schema/users";
 import { hashPassword, verifyPassword } from "../utils/helpers";
 import { HonoContext, UserSignUp } from "../utils/types";
 
@@ -27,7 +27,7 @@ export const registerUser = async (context: HonoContext) => {
       throw new Error(`Un-authorized access! Not an admin.`);
     }
 
-    const existingUser = await db.select().from(users).where(eq(users.email, email));
+    const existingUser = await db.select().from(usersTable).where(eq(usersTable.email, email));
 
     // checking if user already exists
     if (existingUser.length > 0) {
@@ -40,7 +40,7 @@ export const registerUser = async (context: HonoContext) => {
 
     // create new user
     const user = await db
-      .insert(users)
+      .insert(usersTable)
       .values({
         username,
         email,
@@ -100,7 +100,7 @@ export const loginUser = async (context: HonoContext) => {
       throw new Error(`All fields are mandatory!`);
     }
 
-    const existingUser = await db.select().from(users).where(eq(users.email, email));
+    const existingUser = await db.select().from(usersTable).where(eq(usersTable.email, email));
 
     // checking if user exists
     if (existingUser.length === 0) {

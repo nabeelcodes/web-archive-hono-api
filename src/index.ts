@@ -1,9 +1,16 @@
 import { Hono } from "hono";
 
-import { getAllTags } from "./controllers/tagsControllers";
-import { fetchCurrentUser, loginUser, registerUser } from "./controllers/usersControllers";
 import validateToken from "./middleware/validateTokenHandler";
 import { ENV, Variables } from "./utils/types";
+import { getAllTags } from "./controllers/tagsControllers";
+import { fetchCurrentUser, loginUser, registerUser } from "./controllers/usersControllers";
+import {
+  getAllPosts,
+  createNewPost,
+  getSinglePost,
+  updateSinglePost,
+  deleteSinglePost
+} from "./controllers/postsControllers";
 
 const app = new Hono<{ Bindings: ENV; Variables: Variables }>();
 
@@ -16,5 +23,15 @@ app
   .post("/api/users/login", loginUser)
   .use("/api/users/current", validateToken)
   .get("/api/users/current", fetchCurrentUser);
+
+// POSTS ROUTES (api/posts)
+app.get("/api/posts", getAllPosts);
+app.use("/api/posts", validateToken).post("/api/posts/", createNewPost); // Private route
+// POSTS ROUTES (api/posts/:id)
+app.get("/api/posts/:id", getSinglePost);
+app
+  .use("/api/posts/:id", validateToken)
+  .put("/api/posts/:id", updateSinglePost) // Private route
+  .delete("/api/posts/:id", deleteSinglePost); // Private route
 
 export default app;

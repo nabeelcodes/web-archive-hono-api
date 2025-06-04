@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/d1";
 
-import { tags } from "../db/schema/tags";
+import { tagsTable } from "../db/schema/tags";
 import { HonoContext } from "../utils/types";
 
 // @desc: get all tags
@@ -11,7 +11,7 @@ export const getAllTags = async (context: HonoContext) => {
 
   try {
     // get all tags in the collection
-    const allTags = await db.select({ name: tags.name }).from(tags);
+    const allTags = await db.select({ name: tagsTable.name }).from(tagsTable);
 
     // Check if there are no tags
     // If no tags are found, return a 404 error

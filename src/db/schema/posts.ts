@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 
 import { users } from "./users";
 
-export const posts = sqliteTable("posts", {
+export const postsTable = sqliteTable("posts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   creatorId: integer("creator_id")
     .notNull()

@@ -14,15 +14,11 @@ export type ENV = {
 };
 
 export type Variables = {
-  user: { username: string; email: string; id: string };
+  user: Pick<User, "id" | "username" | "email">;
 };
 
 export type JWTPayload = {
-  user: {
-    username: string;
-    email: string;
-    id: string;
-  };
+  user: Pick<User, "id" | "username" | "email">;
   exp: number;
   iat: number;
 };
@@ -41,6 +37,18 @@ export type User = {
   createdAt: Date;
 };
 
+export type UserSignUp = {
+  username: string;
+  email: string;
+  password: string;
+  secret: string;
+};
+
+export type UserLogin = {
+  email: string;
+  password: string;
+};
+
 export type Post = {
   id: number;
   creatorId: number;
@@ -53,14 +61,10 @@ export type Post = {
   updatedAt: Date;
 };
 
-export type UserSignUp = {
-  username: string;
-  email: string;
-  password: string;
-  secret: string;
-};
-
-export type UserLogin = {
-  email: string;
-  password: string;
+export type PostCreate = {
+  title: string;
+  description: string | null;
+  link: string;
+  image: string;
+  tags: string[];
 };
