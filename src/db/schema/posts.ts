@@ -1,13 +1,13 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { sql } from "drizzle-orm";
 
-import { users } from "./users";
+import { usersTable } from "./users";
 
 export const postsTable = sqliteTable("posts", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   creatorId: integer("creator_id")
     .notNull()
-    .references(() => users.id),
+    .references(() => usersTable.id),
   title: text("title").notNull(),
   description: text("description"),
   link: text("link").notNull().unique(),
