@@ -4,7 +4,7 @@ import { sign } from "hono/jwt";
 
 import { usersTable } from "../db/schema/users";
 import { hashPassword, verifyPassword } from "../utils/helpers";
-import { HonoContext, UserSignUp } from "../utils/types";
+import { HonoContext, UserLogin, UserSignUp } from "../utils/types";
 
 // @desc: register a new user
 // @route: POST /api/users/register
@@ -92,7 +92,7 @@ export const loginUser = async (context: HonoContext) => {
   const db = drizzle(context.env.DB);
 
   try {
-    const { email, password } = await context.req.json<{ email: string; password: string }>();
+    const { email, password } = await context.req.json<UserLogin>();
 
     // missing fields validation
     if (!email || !password) {

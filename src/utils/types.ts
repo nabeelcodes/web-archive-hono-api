@@ -37,17 +37,11 @@ export type User = {
   createdAt: Date;
 };
 
-export type UserSignUp = {
-  username: string;
-  email: string;
-  password: string;
+export type UserSignUp = Pick<User, "username" | "email" | "password"> & {
   secret: string;
 };
 
-export type UserLogin = {
-  email: string;
-  password: string;
-};
+export type UserLogin = Pick<User, "email" | "password">;
 
 export type Post = {
   id: number;
@@ -61,10 +55,10 @@ export type Post = {
   updatedAt: Date;
 };
 
-export type PostCreate = {
-  title: string;
-  description: string | null;
-  link: string;
-  image: string;
+export type PostCreate = Pick<Post, "title" | "description" | "link" | "image"> & {
+  tags: string[];
+};
+
+export type PostUpdate = Pick<Post, "title" | "description" | "image"> & {
   tags: string[];
 };

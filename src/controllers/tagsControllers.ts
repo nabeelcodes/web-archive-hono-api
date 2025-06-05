@@ -13,19 +13,12 @@ export const getAllTags = async (context: HonoContext) => {
     // get all tags in the collection
     const allTags = await db.select({ name: tagsTable.name }).from(tagsTable);
 
-    // Check if there are no tags
-    // If no tags are found, return a 404 error
-    if (allTags.length === 0) {
-      context.status(404);
-      throw new Error("No tags found");
-    }
-
     const responseToClient = {
       allTags: allTags.map((tag) => tag.name)
     };
 
     context.status(200);
-    context.json(responseToClient);
+    return context.json(responseToClient);
   } catch (error) {
     if (error instanceof Error) {
       context.status(400);

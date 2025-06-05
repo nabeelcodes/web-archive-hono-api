@@ -3,8 +3,8 @@ import { and, desc, eq, like, or, sql } from "drizzle-orm";
 
 import { postsTable } from "../db/schema/posts";
 import { tagsTable } from "../db/schema/tags";
-import { deserializeTags, serializeTags, verifyPassword } from "../utils/helpers";
-import { HonoContext, PostCreate } from "../utils/types";
+import { deserializeTags, serializeTags } from "../utils/helpers";
+import { HonoContext, PostCreate, PostUpdate } from "../utils/types";
 
 // @desc: get all posts
 // @route: GET /api/posts
@@ -126,21 +126,27 @@ export const getSinglePost = async (context: HonoContext) => {
     }
 
     // Fetch the post by ID
-    const post = await db.select().from(postsTable).where(eq(postsTable.id, postId));
+    const postFromDb = await db.select().from(postsTable).where(eq(postsTable.id, postId));
 
     // If the post does not exist, return a 404 error
-    if (post.length === 0) {
+    if (postFromDb.length === 0) {
       context.status(404);
       return context.json({
         error: {
           title: "Not Found",
-          message: "Post not found."
+          message: "Post does not exists!"
         }
       });
     }
 
+    // Transforming posts.tags(string) to an array of tags
+    const transformedPost = postFromDb.map((post) => ({
+      ...post,
+      tags: deserializeTags(post.tags)
+    }));
+
     context.status(200);
-    return context.json(post[0]);
+    return context.json(transformedPost[0]);
   } catch (error) {
     if (error instanceof Error) {
       context.status(400);
@@ -214,39 +220,41 @@ export const createNewPost = async (context: HonoContext) => {
       });
     }
 
-    // Create new post in db
-    const newPost = await db
-      .insert(postsTable)
-      .values({
-        creatorId: loggedInUser.id,
-        title,
-        description: description || null,
-        link,
-        image,
-        tags: serializeTags(tags),
-        createdAt: new Date(),
-        updatedAt: new Date()
-      })
-      .returning();
+    // Create new post and tags in a transaction
+    const createdPost = await db.transaction(async (tx) => {
+      // Create new post
+      const newPost = await tx
+        .insert(postsTable)
+        .values({
+          creatorId: loggedInUser.id,
+          title,
+          description: description || null,
+          link,
+          image,
+          tags: serializeTags(tags),
+          createdAt: new Date(),
+          updatedAt: new Date()
+        })
+        .returning();
 
-    // Insert new unique tags into tags table
-    for (const tag of tags) {
-      try {
-        await db
-          .insert(tagsTable)
-          .values({
-            name: tag.toLowerCase(), // Store tags in lowercase for consistency
-            createdAt: new Date()
-          })
-          .onConflictDoNothing({ target: tagsTable.name });
-      } catch (error) {
-        console.error(`Failed to insert tag: ${tag}`, error);
-        // Continue with the loop even if one tag insert fails
-      }
-    }
+      // Insert all tags in parallel
+      await Promise.all(
+        tags.map((tag) =>
+          tx
+            .insert(tagsTable)
+            .values({
+              name: tag.toLowerCase(),
+              createdAt: new Date()
+            })
+            .onConflictDoNothing({ target: tagsTable.name })
+        )
+      );
+
+      return newPost[0];
+    });
 
     context.status(201);
-    return context.json(newPost[0]);
+    return context.json(createdPost);
   } catch (error) {
     if (error instanceof Error) {
       context.status(400);
@@ -275,6 +283,121 @@ export const updateSinglePost = async (context: HonoContext) => {
   const db = drizzle(context.env.DB);
 
   try {
+    // Checking user authentication
+    const loggedInUser = context.get("user");
+    if (!loggedInUser?.id) {
+      context.status(403);
+      context.json({
+        error: {
+          title: "Unauthorized",
+          message: "User not logged in!"
+        }
+      });
+    }
+
+    const id = context.req.param("id");
+    const postId = Number(id);
+
+    // Validate the post ID
+    if (!id) {
+      context.status(400);
+      return context.json({
+        error: {
+          title: "Bad Request",
+          message: "Post ID is required."
+        }
+      });
+    }
+
+    // Check if the ID is a valid number
+    if (isNaN(postId)) {
+      context.status(400);
+      return context.json({
+        error: {
+          title: "Bad Request",
+          message: "Post ID must be a number."
+        }
+      });
+    }
+
+    // Fetch the post by ID
+    const existingPostFromDb = await db.select().from(postsTable).where(eq(postsTable.id, postId));
+
+    // If the post does not exist, return a 404 error
+    if (existingPostFromDb.length === 0) {
+      context.status(404);
+      return context.json({
+        error: {
+          title: "Not Found",
+          message: "Post does not exists!"
+        }
+      });
+    }
+
+    const { title, description, image, tags } = await context.req.json<PostUpdate>();
+
+    // Validating all required fields
+    const missingFields: string[] = [];
+    if (!title) missingFields.push("title");
+    if (!image) missingFields.push("image");
+    if (!tags?.length) missingFields.push("tags");
+
+    if (missingFields.length > 0) {
+      context.status(400);
+      return context.json({
+        error: {
+          title: "Validation Error",
+          message: `Missing required fields: ${missingFields.join(", ")}`
+        }
+      });
+    }
+
+    // URL validation
+    try {
+      new URL(image);
+    } catch {
+      context.status(400);
+      return context.json({
+        error: {
+          title: "Validation Error",
+          message: "Invalid URL format for link or image"
+        }
+      });
+    }
+
+    // updating existing post with new data and handling tags in a transaction
+    const finalUpdatedPost = await db.transaction(async (tx) => {
+      // Update the post
+      const updatedPost = await tx
+        .update(postsTable)
+        .set({
+          title,
+          description: description || null,
+          image,
+          tags: serializeTags(tags),
+          updatedAt: new Date()
+        })
+        .where(eq(postsTable.id, postId))
+        .returning();
+
+      // Insert new unique tags
+      await Promise.all(
+        tags.map((tag) =>
+          tx
+            .insert(tagsTable)
+            .values({
+              name: tag.toLowerCase(),
+              createdAt: new Date()
+            })
+            .onConflictDoNothing({ target: tagsTable.name })
+        )
+      );
+
+      return updatedPost[0];
+    });
+
+    context.status(200);
+    return context.json(finalUpdatedPost);
   } catch (error) {
     if (error instanceof Error) {
       context.status(400);
@@ -303,6 +426,62 @@ export const deleteSinglePost = async (context: HonoContext) => {
   const db = drizzle(context.env.DB);
 
   try {
+    // Checking user authentication
+    const loggedInUser = context.get("user");
+    if (!loggedInUser?.id) {
+      context.status(403);
+      context.json({
+        error: {
+          title: "Unauthorized",
+          message: "User not logged in!"
+        }
+      });
+    }
+
+    const id = context.req.param("id");
+    const postId = Number(id);
+
+    // Validate the post ID
+    if (!id) {
+      context.status(400);
+      return context.json({
+        error: {
+          title: "Bad Request",
+          message: "Post ID is required."
+        }
+      });
+    }
+
+    // Check if the ID is a valid number
+    if (isNaN(postId)) {
+      context.status(400);
+      return context.json({
+        error: {
+          title: "Bad Request",
+          message: "Post ID must be a number."
+        }
+      });
+    }
+
+    // Fetch the post by ID
+    const existingPostFromDb = await db.select().from(postsTable).where(eq(postsTable.id, postId));
+
+    // If the post does not exist, return a 404 error
+    if (existingPostFromDb.length === 0) {
+      context.status(404);
+      return context.json({
+        error: {
+          title: "Not Found",
+          message: "Post does not exists!"
+        }
+      });
+    }
+
+    // Delete the post from the database
+    const deletedPost = await db.delete(postsTable).where(eq(postsTable.id, postId)).returning();
+
+    context.status(200);
+    return context.json(deletedPost[0]);
   } catch (error) {
     if (error instanceof Error) {
       context.status(400);
