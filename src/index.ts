@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
 import validateToken from "./middleware/validateTokenHandler";
+import corsHandler from "./middleware/cors";
 import { ENV, Variables } from "./utils/types";
 import { getAllTags } from "./controllers/tagsControllers";
 import { fetchCurrentUser, loginUser, registerUser } from "./controllers/usersControllers";
@@ -13,6 +14,9 @@ import {
 } from "./controllers/postsControllers";
 
 const app = new Hono<{ Bindings: ENV; Variables: Variables }>();
+
+// CORS configuration
+app.use("/api/*", corsHandler);
 
 // TAGS ROUTES
 app.get("/api/tags", getAllTags);
