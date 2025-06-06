@@ -1,5 +1,5 @@
 import { drizzle } from "drizzle-orm/d1";
-import { and, desc, eq, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, like, or } from "drizzle-orm";
 
 import { postsTable } from "../db/schema/posts";
 import { tagsTable } from "../db/schema/tags";
@@ -25,9 +25,10 @@ export const getAllPosts = async (context: HonoContext) => {
     const postsPerPage = Number(context.env.POSTS_PER_PAGE);
     const skipPosts = (currentPage - 1) * postsPerPage;
 
-    // Build where conditions
+    // Build where conditions for query based filtering
     const whereConditions = [];
 
+    // Filtering for search query
     if (searchValue) {
       whereConditions.push(
         or(
@@ -37,13 +38,20 @@ export const getAllPosts = async (context: HonoContext) => {
       );
     }
 
+    // Filtering for tags query
     if (tags.length > 0) {
-      // Create conditions for each tag to check if it exists in the JSON array
-      const tagConditions = tags.map(
-        (tag) => sql`json_extract(${postsTable.tags}, '$') LIKE '%${tag.toLowerCase()}%'`
-      );
-      // Combine all tag conditions with AND to ensure all tags are present
-      whereConditions.push(and(...tagConditions));
+      // Filter out empty tags and trim whitespace
+      const validTags = tags
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0)
+        .map((tag) => tag.toLowerCase());
+
+      if (validTags.length > 0) {
+        // Create conditions for each tag
+        // Using `like` to match tags(string[]) in the `posts.tags(JSON.stringify(string[]))` field
+        const tagConditions = validTags.map((tag) => like(postsTable.tags, `%"${tag}"%`));
+        whereConditions.push(and(...tagConditions));
+      }
     }
 
     // Get total number of posts in the collection
@@ -179,7 +187,7 @@ export const createNewPost = async (context: HonoContext) => {
     const loggedInUser = context.get("user");
     if (!loggedInUser?.id) {
       context.status(403);
-      context.json({
+      return context.json({
         error: {
           title: "Unauthorized",
           message: "User not logged in!"
@@ -191,6 +199,7 @@ export const createNewPost = async (context: HonoContext) => {
 
     // Validating all required fields
     const missingFields: string[] = [];
+
     if (!title) missingFields.push("title");
     if (!link) missingFields.push("link");
     if (!image) missingFields.push("image");
@@ -220,41 +229,36 @@ export const createNewPost = async (context: HonoContext) => {
       });
     }
 
-    // Create new post and tags in a transaction
-    const createdPost = await db.transaction(async (tx) => {
-      // Create new post
-      const newPost = await tx
-        .insert(postsTable)
-        .values({
-          creatorId: loggedInUser.id,
-          title,
-          description: description || null,
-          link,
-          image,
-          tags: serializeTags(tags),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
-        .returning();
+    // Create new post in db
+    const newPost = await db
+      .insert(postsTable)
+      .values({
+        creatorId: loggedInUser.id,
+        title,
+        description: description || null,
+        link,
+        image,
+        tags: serializeTags(tags),
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
 
-      // Insert all tags in parallel
-      await Promise.all(
-        tags.map((tag) =>
-          tx
-            .insert(tagsTable)
-            .values({
-              name: tag.toLowerCase(),
-              createdAt: new Date()
-            })
-            .onConflictDoNothing({ target: tagsTable.name })
-        )
-      );
-
-      return newPost[0];
-    });
+    // Insert new tags in db
+    await Promise.all(
+      tags.map((tag) =>
+        db
+          .insert(tagsTable)
+          .values({
+            name: tag.toLowerCase(),
+            createdAt: new Date()
+          })
+          .onConflictDoNothing({ target: tagsTable.name })
+      )
+    );
 
     context.status(201);
-    return context.json(createdPost);
+    return context.json(newPost[0]);
   } catch (error) {
     if (error instanceof Error) {
       context.status(400);
@@ -287,7 +291,7 @@ export const updateSinglePost = async (context: HonoContext) => {
     const loggedInUser = context.get("user");
     if (!loggedInUser?.id) {
       context.status(403);
-      context.json({
+      return context.json({
         error: {
           title: "Unauthorized",
           message: "User not logged in!"
@@ -365,39 +369,34 @@ export const updateSinglePost = async (context: HonoContext) => {
       });
     }
 
-    // updating existing post with new data and handling tags in a transaction
-    const finalUpdatedPost = await db.transaction(async (tx) => {
-      // Update the post
-      const updatedPost = await tx
-        .update(postsTable)
-        .set({
-          title,
-          description: description || null,
-          image,
-          tags: serializeTags(tags),
-          updatedAt: new Date()
-        })
-        .where(eq(postsTable.id, postId))
-        .returning();
+    // Update the post in db
+    const updatedPost = await db
+      .update(postsTable)
+      .set({
+        title,
+        description: description || null,
+        image,
+        tags: serializeTags(tags),
+        updatedAt: new Date()
+      })
+      .where(eq(postsTable.id, postId))
+      .returning();
 
-      // Insert new unique tags
-      await Promise.all(
-        tags.map((tag) =>
-          tx
-            .insert(tagsTable)
-            .values({
-              name: tag.toLowerCase(),
-              createdAt: new Date()
-            })
-            .onConflictDoNothing({ target: tagsTable.name })
-        )
-      );
-
-      return updatedPost[0];
-    });
+    // Insert new unique tags in db
+    await Promise.all(
+      tags.map((tag) =>
+        db
+          .insert(tagsTable)
+          .values({
+            name: tag.toLowerCase(),
+            createdAt: new Date()
+          })
+          .onConflictDoNothing({ target: tagsTable.name })
+      )
+    );
 
     context.status(200);
-    return context.json(finalUpdatedPost);
+    return context.json(updatedPost[0]);
   } catch (error) {
     if (error instanceof Error) {
       context.status(400);
@@ -430,7 +429,7 @@ export const deleteSinglePost = async (context: HonoContext) => {
     const loggedInUser = context.get("user");
     if (!loggedInUser?.id) {
       context.status(403);
-      context.json({
+      return context.json({
         error: {
           title: "Unauthorized",
           message: "User not logged in!"

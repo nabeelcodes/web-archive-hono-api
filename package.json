@@ -6,7 +6,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate-local": "pnpx wrangler d1 execute web-archive-db --local --file=./src/db/migrations/0000_nifty_norman_osborn.sql",
     "db:migrate-remote": "pnpx wrangler d1 execute web-archive-db --remote --file=./src/db/migrations/0000_nifty_norman_osborn.sql",
-    "studio": "pnpm drizzle-kit studio --port 3000 --verbose",
+    "studio": "pnpm drizzle-kit studio --port 5000 --verbose",
     "lint-fix": "prettier --write .",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings"
   },

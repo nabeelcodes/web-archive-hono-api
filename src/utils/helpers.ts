@@ -1,4 +1,6 @@
-export const serializeTags = (tags: string[]) => JSON.stringify(tags);
+export const serializeTags = (tags: string[]): string => {
+  return JSON.stringify(tags.map((tag) => tag.toLowerCase()));
+};
 
 export const deserializeTags = (tagsString: string): string[] => JSON.parse(tagsString);
 
@@ -35,7 +37,7 @@ export const hashPassword = async (password: string) => {
   return btoa(String.fromCharCode(...combined));
 };
 
-// Helper function to verify password
+// Helper function to verify password using PBKDF2
 export const verifyPassword = async (password: string, hashedPassword: string) => {
   const encoder = new TextEncoder();
   const data = encoder.encode(password);
