@@ -229,6 +229,18 @@ export const createNewPost = async (context: HonoContext) => {
       });
     }
 
+    // Check if the post already exists
+    const existingPost = await db.select().from(postsTable).where(eq(postsTable.link, link));
+    if (existingPost.length > 0) {
+      context.status(400);
+      return context.json({
+        error: {
+          title: "Bad Request",
+          message: "Post already exists!"
+        }
+      });
+    }
+
     // Create new post in db
     const newPost = await db
       .insert(postsTable)
